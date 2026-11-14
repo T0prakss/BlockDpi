@@ -1,0 +1,116 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="BlockDpi.App"
+             Name="BlockDpi"
+             RequestedThemeVariant="Light">
+
+  <Application.Resources>
+    <SolidColorBrush x:Key="Purple" Color="#7C3AED"/>
+    <SolidColorBrush x:Key="PurpleDark" Color="#2E1065"/>
+    <SolidColorBrush x:Key="PurpleSoft" Color="#F5F0FF"/>
+    <SolidColorBrush x:Key="PurpleLine" Color="#EAE0FF"/>
+    <SolidColorBrush x:Key="Muted" Color="#8B7FA8"/>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme>
+      <FluentTheme.Palettes>
+        <ColorPaletteResources x:Key="Light" Accent="#7C3AED" RegionColor="White" ErrorText="#DC2626"/>
+      </FluentTheme.Palettes>
+    </FluentTheme>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="BorderBrush" Value="{StaticResource PurpleLine}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="16"/>
+      <Setter Property="Padding" Value="16,12"/>
+      <Setter Property="Margin" Value="0,0,0,12"/>
+      <Setter Property="BoxShadow" Value="0 2 10 0 #0F7C3AED"/>
+    </Style>
+
+    <Style Selector="TextBlock.section">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="{StaticResource Purple}"/>
+      <Setter Property="Margin" Value="4,4,0,8"/>
+      <Setter Property="LetterSpacing" Value="1"/>
+    </Style>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="{StaticResource PurpleDark}"/>
+    </Style>
+    <Style Selector="TextBlock.desc">
+      <Setter Property="FontSize" Value="11.5"/>
+      <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+      <Setter Property="Margin" Value="0,2,0,0"/>
+    </Style>
+    <Style Selector="Grid.row">
+      <Setter Property="Margin" Value="0,6"/>
+    </Style>
+    <Style Selector="ToggleSwitch">
+      <Setter Property="OnContent" Value=""/>
+      <Setter Property="OffContent" Value=""/>
+      <Setter Property="MinWidth" Value="0"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style Selector="TextBox, NumericUpDown">
+      <Setter Property="CornerRadius" Value="10"/>
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{StaticResource Purple}"/>
+      <Setter Property="Foreground" Value="White"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="18,10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.primary:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#6D28D9"/>
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Button.primary:pressed /template/ ContentPresenter">
+      <Setter Property="Background" Value="#5B21B6"/>
+    </Style>
+    <Style Selector="Button.soft">
+      <Setter Property="Background" Value="{StaticResource PurpleSoft}"/>
+      <Setter Property="Foreground" Value="{StaticResource Purple}"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="18,10"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.soft:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#EDE4FF"/>
+      <Setter Property="Foreground" Value="{StaticResource Purple}"/>
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Background" Value="{StaticResource PurpleSoft}"/>
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="Padding" Value="10"/>
+    </Style>
+    <Style Selector="Button.icon:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#EDE4FF"/>
+    </Style>
+  </Application.Styles>
+
+  <TrayIcon.Icons>
+    <TrayIcons>
+      <TrayIcon Icon="/Assets/icon.png" ToolTipText="BlockDpi" Clicked="OnTrayClicked">
+        <TrayIcon.Menu>
+          <NativeMenu>
+            <NativeMenuItem Header="BlockDpi'ı göster" Click="OnTrayShow"/>
+            <NativeMenuItem Header="Aç / Kapat" Click="OnTrayToggle"/>
+            <NativeMenuItemSeparator/>
+            <NativeMenuItem Header="Çıkış" Click="OnTrayExit"/>
+          </NativeMenu>
+        </TrayIcon.Menu>
+      </TrayIcon>
+    </TrayIcons>
+  </TrayIcon.Icons>
+</Application>
+

@@ -1,0 +1,342 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BlockDpi.MainWindow"
+        Title="BlockDpi"
+        Icon="/Assets/icon.png"
+        Width="400" Height="700"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="White"
+        FontFamily="fonts:Inter#Inter">
+
+  <Window.Styles>
+    <Style Selector="Button.power">
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Content="{TemplateBinding Content}" Background="Transparent"/>
+        </ControlTemplate>
+      </Setter>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+
+    <Style Selector="Border#PowerCircle">
+      <Setter Property="Background" Value="White"/>
+      <Setter Property="BorderBrush" Value="#E4D7FF"/>
+      <Setter Property="BorderThickness" Value="6"/>
+      <Setter Property="BoxShadow" Value="0 10 30 0 #227C3AED"/>
+      <Setter Property="RenderTransform" Value="scale(1)"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15"/>
+          <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.3"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.power:pointerover Border#PowerCircle">
+      <Setter Property="RenderTransform" Value="scale(1.04)"/>
+    </Style>
+    <Style Selector="Button.power:pressed Border#PowerCircle">
+      <Setter Property="RenderTransform" Value="scale(0.97)"/>
+    </Style>
+    <Style Selector="Border#PowerCircle.on">
+      <Setter Property="Background">
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#A78BFA" Offset="0"/>
+          <GradientStop Color="#7C3AED" Offset="0.55"/>
+          <GradientStop Color="#5B21B6" Offset="1"/>
+        </LinearGradientBrush>
+      </Setter>
+      <Setter Property="BorderBrush" Value="#DDD0FF"/>
+      <Setter Property="BoxShadow" Value="0 16 44 0 #667C3AED"/>
+    </Style>
+    <Style Selector="PathIcon#PowerIcon">
+      <Setter Property="Foreground" Value="#A78BFA"/>
+    </Style>
+    <Style Selector="PathIcon#PowerIcon.on">
+      <Setter Property="Foreground" Value="White"/>
+    </Style>
+    <Style Selector="Ellipse.pulse">
+      <Setter Property="Opacity" Value="0"/>
+    </Style>
+    <Style Selector="Ellipse.pulse.on">
+      <Style.Animations>
+        <Animation Duration="0:0:2.2" IterationCount="Infinite" Easing="CubicEaseOut">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.55"/>
+            <Setter Property="ScaleTransform.ScaleX" Value="0.9"/>
+            <Setter Property="ScaleTransform.ScaleY" Value="0.9"/>
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="0"/>
+            <Setter Property="ScaleTransform.ScaleX" Value="1.3"/>
+            <Setter Property="ScaleTransform.ScaleY" Value="1.3"/>
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="Ellipse.pulse.busy">
+      <Style.Animations>
+        <Animation Duration="0:0:0.9" IterationCount="Infinite" PlaybackDirection="Alternate">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.1"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.5"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="Border#StatusPill">
+      <Setter Property="Background" Value="#F3F0F7"/>
+    </Style>
+    <Style Selector="Border#StatusPill.on">
+      <Setter Property="Background" Value="#EDE4FF"/>
+    </Style>
+    <Style Selector="Ellipse#StatusDot">
+      <Setter Property="Fill" Value="#B8AFC9"/>
+    </Style>
+    <Style Selector="Ellipse#StatusDot.on">
+      <Setter Property="Fill" Value="#22C55E"/>
+    </Style>
+    <Style Selector="Border.info">
+      <Setter Property="Background" Value="{StaticResource PurpleSoft}"/>
+      <Setter Property="CornerRadius" Value="14"/>
+      <Setter Property="Padding" Value="10,10"/>
+      <Setter Property="Margin" Value="4,0"/>
+    </Style>
+    <Style Selector="Border.info TextBlock.k">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Foreground" Value="{StaticResource Muted}"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Border.info TextBlock.v">
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Foreground" Value="{StaticResource PurpleDark}"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="0,3,0,0"/>
+      <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+    <Border Grid.Row="0" Padding="20,18,20,10">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Image Source="/Assets/icon.png" Width="38" Height="38"/>
+        <StackPanel Grid.Column="1" Margin="12,0" VerticalAlignment="Center">
+          <TextBlock x:Name="HeaderTitle" Text="BlockDpi" FontSize="20" FontWeight="Bold" Foreground="{StaticResource PurpleDark}"/>
+          <TextBlock x:Name="HeaderSub" Text="DPI atlatıcı · VPN değil" FontSize="11.5" Foreground="{StaticResource Muted}"/>
+        </StackPanel>
+        <Button x:Name="SettingsButton" Grid.Column="2" Classes="icon" Click="OnSettingsClick" ToolTip.Tip="Ayarlar">
+          <PathIcon x:Name="SettingsIcon" Foreground="{StaticResource Purple}" Width="18" Height="18"
+                    Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/>
+        </Button>
+      </Grid>
+    </Border>
+
+    <Panel Grid.Row="1">
+      <Grid x:Name="HomeView" RowDefinitions="*,Auto,Auto,Auto">
+        <Grid.Background>
+          <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
+            <GradientStop Color="#FFFFFF" Offset="0"/>
+            <GradientStop Color="#F7F2FF" Offset="1"/>
+          </LinearGradientBrush>
+        </Grid.Background>
+
+        <StackPanel Grid.Row="0" VerticalAlignment="Center" Spacing="0">
+          <Button x:Name="PowerButton" Classes="power" HorizontalAlignment="Center" Click="OnPowerClick">
+            <Panel Width="250" Height="250">
+              <Ellipse x:Name="Pulse" Classes="pulse" Width="200" Height="200" Fill="#C4B5FD">
+                <Ellipse.RenderTransform><ScaleTransform/></Ellipse.RenderTransform>
+              </Ellipse>
+              <Border x:Name="PowerCircle" Width="190" Height="190" CornerRadius="95">
+                <PathIcon x:Name="PowerIcon" Width="64" Height="64"
+                          Data="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13"/>
+              </Border>
+            </Panel>
+          </Button>
+
+          <Border x:Name="StatusPill" HorizontalAlignment="Center" CornerRadius="20" Padding="14,6" Margin="0,8,0,0">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Ellipse x:Name="StatusDot" Width="9" Height="9" VerticalAlignment="Center"/>
+              <TextBlock x:Name="StatusText" Text="Bağlı Değil" FontSize="13" FontWeight="SemiBold" Foreground="{StaticResource PurpleDark}"/>
+            </StackPanel>
+          </Border>
+          <TextBlock x:Name="StatusSub" Text="Açmak için butona dokun" HorizontalAlignment="Center" Margin="0,10,0,0"
+                     FontSize="12.5" Foreground="{StaticResource Muted}"/>
+        </StackPanel>
+        <Border x:Name="ErrorBanner" Grid.Row="1" IsVisible="False" Margin="20,0,20,12" Padding="14,12"
+                CornerRadius="14" Background="#FFF1F2" BorderBrush="#FECDD3" BorderThickness="1">
+          <StackPanel Spacing="8">
+            <TextBlock x:Name="ErrorText" TextWrapping="Wrap" FontSize="12" Foreground="#9F1239"/>
+            <Button x:Name="InstallWinDivertButton" Classes="primary" IsVisible="False" HorizontalAlignment="Left"
+                    Padding="12,6" FontSize="12" Content="WinDivert'i indir ve kur" Click="OnInstallWinDivert"/>
+          </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="2" ColumnDefinitions="*,*,*" Margin="16,0,16,14">
+          <Border Classes="info" Grid.Column="0">
+            <StackPanel><TextBlock Classes="k" Text="DNS"/><TextBlock x:Name="InfoDns" Classes="v" Text="-"/></StackPanel>
+          </Border>
+          <Border Classes="info" Grid.Column="1">
+            <StackPanel><TextBlock Classes="k" Text="Kapsam"/><TextBlock x:Name="InfoScope" Classes="v" Text="-"/></StackPanel>
+          </Border>
+          <Border Classes="info" Grid.Column="2">
+            <StackPanel><TextBlock Classes="k" Text="Ping"/><TextBlock Classes="v" Text="Etkilenmez"/></StackPanel>
+          </Border>
+        </Grid>
+
+        <TextBlock Grid.Row="3" x:Name="FooterText" HorizontalAlignment="Center" Margin="0,0,0,14"
+                   FontSize="11" Foreground="#B3A8CC" Text="BlockDpi v1.0"/>
+      </Grid>
+      <Grid x:Name="SettingsView" IsVisible="False" RowDefinitions="*,Auto">
+        <ScrollViewer Grid.Row="0" Padding="18,4,18,4">
+          <StackPanel>
+
+            <TextBlock Classes="section" Text="GENEL"/>
+            <Border Classes="card">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock x:Name="StartWithOsTitle" Classes="title" Text="Bilgisayar açılınca başlat"/>
+                    <TextBlock Classes="desc" Text="Açılışta tepside başlar ve otomatik bağlanır."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="StartWithOsSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Kapatınca tepsiye küçült"/>
+                    <TextBlock Classes="desc" Text="Pencereyi kapatınca arka planda çalışmaya devam eder."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="TraySwitch" Grid.Column="1"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="section" Text="DNS YÖNLENDİRME"/>
+            <Border Classes="card">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="DNS yönlendirme"/>
+                    <TextBlock Classes="desc" Text="DNS isteklerini standart dışı porttaki DNS'e yönlendirir; servis sağlayıcının DNS engelini aşar."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="DnsSwitch" Grid.Column="1"/>
+                </Grid>
+                <StackPanel x:Name="DnsFields" Spacing="8" Margin="0,6,0,4">
+                  <ComboBox x:Name="DnsPreset" HorizontalAlignment="Stretch" SelectionChanged="OnDnsPresetChanged">
+                    <ComboBoxItem Content="Şifreli DoH (Cloudflare 1.1.1.1 / Google) — önerilen"/>
+                    <ComboBoxItem Content="Yandex (77.88.8.8 : 1253)"/>
+                    <ComboBoxItem Content="Yandex alternatif (77.88.8.1 : 1253)"/>
+                    <ComboBoxItem Content="AdGuard (94.140.14.14 : 5353)"/>
+                    <ComboBoxItem Content="Özel UDP DNS"/>
+                  </ComboBox>
+                  <Grid ColumnDefinitions="*,8,90">
+                    <TextBox x:Name="DnsV4Box" Watermark="IPv4 DNS adresi"/>
+                    <NumericUpDown x:Name="DnsV4PortBox" Grid.Column="2" Minimum="1" Maximum="65535" Increment="1" FormatString="0" ShowButtonSpinner="False" Watermark="Port"/>
+                  </Grid>
+                  <Grid ColumnDefinitions="*,8,90">
+                    <TextBox x:Name="DnsV6Box" Watermark="IPv6 DNS adresi (boş = kapalı)"/>
+                    <NumericUpDown x:Name="DnsV6PortBox" Grid.Column="2" Minimum="1" Maximum="65535" Increment="1" FormatString="0" ShowButtonSpinner="False" Watermark="Port"/>
+                  </Grid>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="section" Text="DPI ATLATMA YÖNTEMLERİ"/>
+            <Border Classes="card">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="HTTPS parçalama"/>
+                    <TextBlock Classes="desc" Text="TLS ClientHello paketini bölerek site adını DPI'dan gizler."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="HttpsFragSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Site adının ortasından böl"/>
+                    <TextBlock Classes="desc" Text="SNI / Host değerini ikiye ayırır."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="SniSplitSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="İlk parça boyutu"/>
+                    <TextBlock Classes="desc" Text="Bayt cinsinden (GoodbyeDPI varsayılanı: 2)."/>
+                  </StackPanel>
+                  <NumericUpDown x:Name="FragSizeBox" Grid.Column="1" Width="110" Minimum="1" Maximum="1000" Increment="1" FormatString="0"/>
+                </Grid>
+                <Grid x:Name="ReverseRow" Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Parçaları ters sırada gönder"/>
+                    <TextBlock Classes="desc" Text="Önce ikinci parça gider; DPI birleştiremez."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="ReverseSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="HTTP parçalama"/>
+                    <TextBlock Classes="desc" Text="Şifresiz HTTP isteklerini de böler."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="HttpFragSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Host başlığı hilesi"/>
+                    <TextBlock Classes="desc" Text="&quot;Host:&quot; başlığını &quot;hoSt:&quot; yapar."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="HostTrickSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid x:Name="QuicRow" Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="QUIC'i engelle"/>
+                    <TextBlock Classes="desc" Text="Tarayıcıyı TCP'ye zorlar (YouTube, Discord vb. için önerilir)."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="QuicSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid x:Name="FakeRow" Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Sahte paket gönder"/>
+                    <TextBlock Classes="desc" Text="Düşük TTL'li sahte paket DPI'ı şaşırtır, sunucuya ulaşmaz. Sorun olursa kapatın."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="FakeSwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid x:Name="FakeTtlRow" Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Sahte paket TTL"/>
+                    <TextBlock Classes="desc" Text="Genelde 3-6 arası çalışır."/>
+                  </StackPanel>
+                  <NumericUpDown x:Name="FakeTtlBox" Grid.Column="1" Width="110" Minimum="1" Maximum="64" Increment="1" FormatString="0"/>
+                </Grid>
+                <TextBlock x:Name="MacNote" IsVisible="False" Classes="desc" Margin="0,6,0,0"
+                           Text="macOS'ta yerel proxy modu kullanılır (127.0.0.1). Trafik bilgisayardan çıkmaz, uzak sunucu yoktur."/>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Classes="section" Text="SİTE LİSTESİ"/>
+            <Border Classes="card">
+              <StackPanel>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Sadece listedeki sitelere uygula"/>
+                    <TextBlock Classes="desc" Text="Kapalıyken tüm sitelere uygulanır. Alt alan adları da dahildir."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="BlacklistSwitch" Grid.Column="1"/>
+                </Grid>
+                <TextBox x:Name="BlacklistBox" AcceptsReturn="True" TextWrapping="NoWrap" Height="150" Margin="0,8,0,4"
+                         FontFamily="Consolas,Menlo,monospace" FontSize="12" Watermark="Her satıra bir alan adı (ör. discord.com)"/>
+              </StackPanel>
+            </Border>
+
+          </StackPanel>
+        </ScrollViewer>
+
+        <Border Grid.Row="1" Padding="18,12" BorderBrush="{StaticResource PurpleLine}" BorderThickness="0,1,0,0" Background="White">
+          <Grid ColumnDefinitions="*,10,*">
+            <Button Grid.Column="0" Classes="soft" HorizontalAlignment="Stretch" Content="Varsayılana dön" Click="OnResetClick"/>
+            <Button Grid.Column="2" Classes="primary" HorizontalAlignment="Stretch" Content="Kaydet" Click="OnSaveClick"/>
+          </Grid>
+        </Border>
+      </Grid>
+
+    </Panel>
+  </Grid>
+</Window>
+
