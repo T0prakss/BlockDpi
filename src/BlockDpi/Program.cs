@@ -43,6 +43,6 @@ internal static class Program
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithInterFont()
-            .LogToTrace();
+            .With(new Win32PlatformOptions { RenderingMode = [Win32RenderingMode.Software] })
+            .With(new SkiaOptions { MaxGpuResourceSizeBytes = 1024 * 1024 });
 }

@@ -209,7 +209,7 @@ public sealed class WindowsDpiEngine : IDpiEngine
 
     private unsafe void Worker()
     {
-        var buf = new byte[0xFFFF + 64];
+        var buf = new byte[8192];
         fixed (byte* p = buf)
         {
             while (_running)

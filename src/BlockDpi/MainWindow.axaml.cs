@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -12,6 +13,9 @@ public partial class MainWindow : Window
 {
     [DllImport("kernel32.dll")]
     private static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimumWorkingSetSize, IntPtr maximumWorkingSetSize);
+
+    [DllImport("psapi.dll")]
+    private static extern bool EmptyWorkingSet(IntPtr hProcess);
 
     private enum State { Off, Busy, On }
 
@@ -57,7 +61,9 @@ public partial class MainWindow : Window
                       "(Windows Defender engellerse BlockDpi klasörünü Dışlamalar'a ekle).", showInstall: true);
 
         Closing += OnClosing;
-        Opened += (_, _) => { Pulse.Classes.Set("on", _state == State.On); };
+        Opened += (_, _) => { Pulse.Classes.Set("on", _state == State.On); TrimMemory(); };
+        Activated += (_, _) => { if (IsVisible) Pulse.Classes.Set("on", _state == State.On); };
+        Deactivated += (_, _) => { Pulse.Classes.Set("on", false); TrimMemory(); };
 
         if (!File.Exists(AppSettings.FilePath))
         {
@@ -65,13 +71,15 @@ public partial class MainWindow : Window
         }
 
         _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(30) };
-        _updateTimer.Tick += async (_, _) => await CheckForUpdatesAsync();
+        _updateTimer.Tick += async (_, _) => { await CheckForUpdatesAsync(); TrimMemory(); };
         _updateTimer.Start();
 
         Dispatcher.UIThread.Post(async () =>
         {
             await StartAsync();
             await CheckForUpdatesAsync();
+            await Task.Delay(1500);
+            TrimMemory();
         }, DispatcherPriority.Background);
     }
 
@@ -127,10 +135,16 @@ public partial class MainWindow : Window
     {
         try
         {
+            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
             GC.Collect(2, GCCollectionMode.Aggressive, true, true);
             GC.WaitForPendingFinalizers();
+            GC.Collect(2, GCCollectionMode.Aggressive, true, true);
             if (OperatingSystem.IsWindows())
-                SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, (IntPtr)(-1), (IntPtr)(-1));
+            {
+                IntPtr h = Process.GetCurrentProcess().Handle;
+                EmptyWorkingSet(h);
+                SetProcessWorkingSetSize(h, (IntPtr)(-1), (IntPtr)(-1));
+            }
         }
         catch { }
     }

@@ -130,13 +130,16 @@ public sealed class DnsResolver
                 {
                     if (!ip.Equals(BtkIpV4))
                     {
-                        if (_ipToHost.Count > 8192) _ipToHost.Clear();
+                        if (_ipToHost.Count > 256) _ipToHost.Clear();
                         _ipToHost[ip] = hostName;
                     }
                 }
             }
             if (cacheKey.Length > 0)
+            {
+                if (_wireCache.Count > 256) _wireCache.Clear();
                 _wireCache[cacheKey] = ((byte[])resp.Clone(), DateTime.UtcNow.AddMinutes(3));
+            }
         }
         return resp;
     }
