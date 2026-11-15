@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -8,6 +10,9 @@ namespace BlockDpi;
 
 public partial class MainWindow : Window
 {
+    [DllImport("kernel32.dll")]
+    private static extern bool SetProcessWorkingSetSize(IntPtr process, IntPtr minimumWorkingSetSize, IntPtr maximumWorkingSetSize);
+
     private enum State { Off, Busy, On }
 
     private AppSettings _settings;
@@ -15,8 +20,6 @@ public partial class MainWindow : Window
     private State _state = State.Off;
     private bool _exiting;
     private bool _loadingUi;
-    private DateTime _lastSettingsWrite;
-    private readonly DispatcherTimer _hotReloadTimer;
 
     public event Action? ExitRequested;
 
@@ -49,36 +52,30 @@ public partial class MainWindow : Window
                       "(Windows Defender engellerse BlockDpi klasörünü Dışlamalar'a ekle).", showInstall: true);
 
         Closing += OnClosing;
+        Opened += (_, _) => { Pulse.Classes.Set("on", _state == State.On); };
 
         if (!File.Exists(AppSettings.FilePath))
         {
             try { _settings.Save(); } catch { }
         }
-        _lastSettingsWrite = File.Exists(AppSettings.FilePath) ? File.GetLastWriteTimeUtc(AppSettings.FilePath) : DateTime.MinValue;
-        _hotReloadTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
-        _hotReloadTimer.Tick += OnHotReloadTick;
-        _hotReloadTimer.Start();
 
         Dispatcher.UIThread.Post(() => _ = StartAsync(), DispatcherPriority.Background);
     }
 
-    private async void OnHotReloadTick(object? sender, EventArgs e)
+    public new void Show()
+    {
+        base.Show();
+        Pulse.Classes.Set("on", _state == State.On);
+    }
+
+    public static void TrimMemory()
     {
         try
         {
-            if (!File.Exists(AppSettings.FilePath)) return;
-            var wt = File.GetLastWriteTimeUtc(AppSettings.FilePath);
-            if (wt <= _lastSettingsWrite) return;
-            _lastSettingsWrite = wt;
-            var loaded = AppSettings.Load();
-            _settings = loaded;
-            LoadSettingsToUi(_settings);
-            UpdateInfo();
-            if (_state == State.On)
-            {
-                await StopAsync();
-                await StartAsync();
-            }
+            GC.Collect(2, GCCollectionMode.Aggressive, true, true);
+            GC.WaitForPendingFinalizers();
+            if (OperatingSystem.IsWindows())
+                SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, (IntPtr)(-1), (IntPtr)(-1));
         }
         catch { }
     }
@@ -101,6 +98,7 @@ public partial class MainWindow : Window
         {
             await Task.Run(() => _engine.Start(s));
             SetState(State.On);
+            TrimMemory();
         }
         catch (EngineException ex)
         {
@@ -133,8 +131,8 @@ public partial class MainWindow : Window
         bool on = st == State.On;
         PowerCircle.Classes.Set("on", on);
         PowerIcon.Classes.Set("on", on);
-        Pulse.Classes.Set("on", on);
-        Pulse.Classes.Set("busy", st == State.Busy);
+        Pulse.Classes.Set("on", on && IsVisible);
+        Pulse.Classes.Set("busy", st == State.Busy && IsVisible);
         StatusPill.Classes.Set("on", on);
         StatusDot.Classes.Set("on", on);
 
@@ -297,12 +295,7 @@ public partial class MainWindow : Window
 
         bool autostartChanged = s.StartWithOs != _settings.StartWithOs;
         _settings = s;
-        try
-        {
-            _settings.Save();
-            _lastSettingsWrite = File.GetLastWriteTimeUtc(AppSettings.FilePath);
-        }
-        catch { }
+        try { _settings.Save(); } catch { }
         if (autostartChanged) await Task.Run(() => Autostart.Apply(s.StartWithOs));
         UpdateInfo();
 
@@ -327,7 +320,10 @@ public partial class MainWindow : Window
         if (_settings.MinimizeToTray)
         {
             e.Cancel = true;
+            Pulse.Classes.Set("on", false);
+            Pulse.Classes.Set("busy", false);
             Hide();
+            TrimMemory();
             return;
         }
         _exiting = true;

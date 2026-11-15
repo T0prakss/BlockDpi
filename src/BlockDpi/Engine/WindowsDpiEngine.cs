@@ -188,11 +188,7 @@ public sealed class WindowsDpiEngine : IDpiEngine
     {
         var parts = new List<string>();
         if (_s.HttpsFragment || _s.HttpFragment || _s.HttpHostTrick || _s.FakePacket)
-            parts.Add("(outbound and tcp.PayloadLength > 0)");
-        parts.Add("(outbound and ip.DstAddr == 195.175.254.2 and tcp)");
-        parts.Add("(inbound and ip.SrcAddr == 162.159.135.232 and tcp)");
-        if (_s.FakePacket)
-            parts.Add("(inbound and tcp.Syn == 1 and tcp.Ack == 1)");
+            parts.Add("(outbound and tcp.PayloadLength > 0 and (tcp.DstPort == 80 or tcp.DstPort == 443 or tcp.DstPort == 2053 or tcp.DstPort == 2083 or tcp.DstPort == 2087 or tcp.DstPort == 2096 or tcp.DstPort == 8443))");
         if (_s.BlockQuic)
             parts.Add("(outbound and (udp.DstPort == 443 or udp.DstPort == 2053 or udp.DstPort == 2083 or udp.DstPort == 2087 or udp.DstPort == 2096 or udp.DstPort == 8443))");
 
