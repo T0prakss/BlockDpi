@@ -26,6 +26,7 @@ public partial class MainWindow : Window
     private bool _loadingUi;
     private UpdateReleaseInfo? _pendingUpdate;
     private readonly DispatcherTimer _updateTimer;
+    private readonly DispatcherTimer _memTrimTimer;
 
     public event Action? ExitRequested;
 
@@ -73,6 +74,10 @@ public partial class MainWindow : Window
         _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(30) };
         _updateTimer.Tick += async (_, _) => { await CheckForUpdatesAsync(); TrimMemory(); };
         _updateTimer.Start();
+
+        _memTrimTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+        _memTrimTimer.Tick += (_, _) => { if (!IsVisible) TrimWorkingSetFast(); };
+        _memTrimTimer.Start();
 
         Dispatcher.UIThread.Post(async () =>
         {
@@ -127,8 +132,23 @@ public partial class MainWindow : Window
 
     public new void Show()
     {
+        ShowInTaskbar = true;
         base.Show();
+        WindowState = WindowState.Normal;
         Pulse.Classes.Set("on", _state == State.On);
+    }
+
+    public static void TrimWorkingSetFast()
+    {
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                IntPtr h = Process.GetCurrentProcess().Handle;
+                EmptyWorkingSet(h);
+            }
+        }
+        catch { }
     }
 
     public static void TrimMemory()
@@ -396,6 +416,8 @@ public partial class MainWindow : Window
             e.Cancel = true;
             Pulse.Classes.Set("on", false);
             Pulse.Classes.Set("busy", false);
+            WindowState = WindowState.Minimized;
+            ShowInTaskbar = false;
             Hide();
             TrimMemory();
             return;

@@ -375,15 +375,15 @@ public sealed class WindowsDpiEngine : IDpiEngine
 
         if (!_s.HttpsFragment) { Send(pkt, len, ref addr); return; }
 
-        var cuts = new SortedSet<int>();
-        if (_s.FragmentSize > 0 && _s.FragmentSize < payLen) cuts.Add(_s.FragmentSize);
-        if (_s.SplitAtSni && hasSni && sniLen > 1) cuts.Add(sniOff + sniLen / 2);
+        _cuts.Clear();
+        if (_s.FragmentSize > 0 && _s.FragmentSize < payLen) _cuts.Add(_s.FragmentSize);
+        if (_s.SplitAtSni && hasSni && sniLen > 1) _cuts.Add(sniOff + sniLen / 2);
         else if (isSecondSegment && !hasSni)
         {
-            if (payLen > 16) cuts.Add(16);
-            if (payLen > 48) cuts.Add(48);
+            if (payLen > 16) _cuts.Add(16);
+            if (payLen > 48) _cuts.Add(48);
         }
-        SendSegments(pkt, len, ref addr, ver, ipHl, payOff, payLen, cuts);
+        SendSegments(pkt, len, ref addr, ver, ipHl, payOff, payLen, _cuts);
     }
 
     private void HandleHttp(byte[] pkt, int len, ref WinDivertAddress addr, int ver, int ipHl, int payOff, int payLen, int srcPort)
@@ -411,14 +411,19 @@ public sealed class WindowsDpiEngine : IDpiEngine
             pkt[o] = (byte)'h'; pkt[o + 1] = (byte)'o'; pkt[o + 2] = (byte)'S'; pkt[o + 3] = (byte)'t';
         }
 
-        var cuts = new SortedSet<int>();
+        _cuts.Clear();
         if (_s.HttpFragment)
         {
-            if (_s.FragmentSize > 0 && _s.FragmentSize < payLen) cuts.Add(_s.FragmentSize);
-            if (_s.SplitAtSni && hasHost && valLen > 1) cuts.Add(valOff + valLen / 2);
+            if (_s.FragmentSize > 0 && _s.FragmentSize < payLen) _cuts.Add(_s.FragmentSize);
+            if (_s.SplitAtSni && hasHost && valLen > 1) _cuts.Add(valOff + valLen / 2);
         }
-        SendSegments(pkt, len, ref addr, ver, ipHl, payOff, payLen, cuts);
+        SendSegments(pkt, len, ref addr, ver, ipHl, payOff, payLen, _cuts);
     }
+
+    private readonly SortedSet<int> _cuts = [];
+    private readonly byte[][] _segPool = [new byte[4096], new byte[4096], new byte[4096], new byte[4096]];
+    private readonly int[] _segLens = new int[4];
+    private readonly byte[] _fakeScratch = new byte[4096];
 
     private void SendSegments(byte[] pkt, int len, ref WinDivertAddress addr, int ver, int ipHl, int payOff, int payLen, SortedSet<int> cuts)
     {
@@ -429,36 +434,45 @@ public sealed class WindowsDpiEngine : IDpiEngine
             return;
         }
 
-        var segs = new List<byte[]>(cuts.Count + 1);
         int start = 0;
         int idx = 0;
         foreach (int c in cuts)
         {
-            if (c <= start || c >= payLen) continue;
-            segs.Add(BuildSegment(pkt, ver, ipHl, payOff, start, c - start, idx++, ref addr));
+            if (c <= start || c >= payLen || idx >= 3) continue;
+            _segLens[idx] = BuildSegmentInto(_segPool[idx], pkt, ver, ipHl, payOff, start, c - start, idx, ref addr);
+            idx++;
             start = c;
         }
-        segs.Add(BuildSegment(pkt, ver, ipHl, payOff, start, payLen - start, idx, ref addr));
+        _segLens[idx] = BuildSegmentInto(_segPool[idx], pkt, ver, ipHl, payOff, start, payLen - start, idx, ref addr);
+        int count = idx + 1;
 
-        if (_s.ReverseFragments) segs.Reverse();
-        foreach (var s in segs) Send(s, s.Length, ref addr);
+        if (_s.ReverseFragments)
+        {
+            for (int i = count - 1; i >= 0; i--)
+                Send(_segPool[i], _segLens[i], ref addr);
+        }
+        else
+        {
+            for (int i = 0; i < count; i++)
+                Send(_segPool[i], _segLens[i], ref addr);
+        }
     }
 
-    private static byte[] BuildSegment(byte[] pkt, int ver, int ipHl, int payOff, int start, int count, int segIdx, ref WinDivertAddress addr)
+    private static int BuildSegmentInto(byte[] seg, byte[] pkt, int ver, int ipHl, int payOff, int start, int count, int segIdx, ref WinDivertAddress addr)
     {
-        var seg = new byte[payOff + count];
+        int segLen = payOff + count;
         Buffer.BlockCopy(pkt, 0, seg, 0, payOff);
         Buffer.BlockCopy(pkt, payOff + start, seg, payOff, count);
 
         if (ver == 4)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(seg.AsSpan(2), (ushort)seg.Length);
+            BinaryPrimitives.WriteUInt16BigEndian(seg.AsSpan(2), (ushort)segLen);
             ushort ipId = BinaryPrimitives.ReadUInt16BigEndian(seg.AsSpan(4));
             BinaryPrimitives.WriteUInt16BigEndian(seg.AsSpan(4), unchecked((ushort)(ipId + segIdx + 1)));
         }
         else
         {
-            BinaryPrimitives.WriteUInt16BigEndian(seg.AsSpan(4), (ushort)(seg.Length - 40));
+            BinaryPrimitives.WriteUInt16BigEndian(seg.AsSpan(4), (ushort)(segLen - 40));
         }
 
         uint seq = BinaryPrimitives.ReadUInt32BigEndian(seg.AsSpan(ipHl + 4));
@@ -467,8 +481,8 @@ public sealed class WindowsDpiEngine : IDpiEngine
         if (start == 0)
             BinaryPrimitives.WriteUInt16BigEndian(seg.AsSpan(ipHl + 14), 2);
 
-        CalcChecksums(seg, seg.Length, ref addr);
-        return seg;
+        CalcChecksums(seg, segLen, ref addr);
+        return segLen;
     }
 
     private static unsafe void CalcChecksums(byte[] pkt, int len, ref WinDivertAddress addr)
@@ -480,59 +494,57 @@ public sealed class WindowsDpiEngine : IDpiEngine
 
     private void SendFakeTlsPackets(byte[] pkt, int len, ref WinDivertAddress addr, int ver, int ipHl, int payOff, int off, int count, byte autoTtl)
     {
-        var fakeComplete = new byte[payOff + FakeTlsClientHello.Length];
-        Buffer.BlockCopy(pkt, 0, fakeComplete, 0, payOff);
-        Buffer.BlockCopy(FakeTlsClientHello, 0, fakeComplete, payOff, FakeTlsClientHello.Length);
+        int fcLen = payOff + FakeTlsClientHello.Length;
+        Buffer.BlockCopy(pkt, 0, _fakeScratch, 0, payOff);
+        Buffer.BlockCopy(FakeTlsClientHello, 0, _fakeScratch, payOff, FakeTlsClientHello.Length);
         if (ver == 4)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(fakeComplete.AsSpan(2), (ushort)fakeComplete.Length);
-            fakeComplete[8] = autoTtl;
+            BinaryPrimitives.WriteUInt16BigEndian(_fakeScratch.AsSpan(2), (ushort)fcLen);
+            _fakeScratch[8] = autoTtl;
         }
         else
         {
-            BinaryPrimitives.WriteUInt16BigEndian(fakeComplete.AsSpan(4), (ushort)(fakeComplete.Length - 40));
-            fakeComplete[7] = autoTtl;
+            BinaryPrimitives.WriteUInt16BigEndian(_fakeScratch.AsSpan(4), (ushort)(fcLen - 40));
+            _fakeScratch[7] = autoTtl;
         }
         var a0 = addr;
-        CalcChecksums(fakeComplete, fakeComplete.Length, ref a0);
-        Send(fakeComplete, fakeComplete.Length, ref a0);
+        CalcChecksums(_fakeScratch, fcLen, ref a0);
+        Send(_fakeScratch, fcLen, ref a0);
 
-        if (count <= 0) return;
+        if (count <= 0 || len > _fakeScratch.Length) return;
 
-        var baseFake = new byte[len];
-        Buffer.BlockCopy(pkt, 0, baseFake, 0, len);
+        Buffer.BlockCopy(pkt, 0, _fakeScratch, 0, len);
         ReadOnlySpan<byte> safeHost = "www.wikipedia.org"u8;
         for (int i = 0; i < count && payOff + off + i < len; i++)
         {
-            byte b = baseFake[payOff + off + i];
-            if (b != '.') baseFake[payOff + off + i] = safeHost[i % safeHost.Length];
+            byte b = _fakeScratch[payOff + off + i];
+            if (b != '.') _fakeScratch[payOff + off + i] = safeHost[i % safeHost.Length];
         }
 
-        var fakeAutoTtl = (byte[])baseFake.Clone();
-        if (ver == 4) fakeAutoTtl[8] = autoTtl; else fakeAutoTtl[7] = autoTtl;
+        if (ver == 4) _fakeScratch[8] = autoTtl; else _fakeScratch[7] = autoTtl;
         var a1 = addr;
-        CalcChecksums(fakeAutoTtl, len, ref a1);
-        Send(fakeAutoTtl, len, ref a1);
+        CalcChecksums(_fakeScratch, len, ref a1);
+        Send(_fakeScratch, len, ref a1);
     }
 
     private void SendFakeHttpPacket(byte[] pkt, int ver, int ipHl, int payOff, ref WinDivertAddress addr, byte autoTtl)
     {
-        var fake = new byte[payOff + FakeHttpRequest.Length];
-        Buffer.BlockCopy(pkt, 0, fake, 0, payOff);
-        Buffer.BlockCopy(FakeHttpRequest, 0, fake, payOff, FakeHttpRequest.Length);
+        int fLen = payOff + FakeHttpRequest.Length;
+        Buffer.BlockCopy(pkt, 0, _fakeScratch, 0, payOff);
+        Buffer.BlockCopy(FakeHttpRequest, 0, _fakeScratch, payOff, FakeHttpRequest.Length);
         if (ver == 4)
         {
-            BinaryPrimitives.WriteUInt16BigEndian(fake.AsSpan(2), (ushort)fake.Length);
-            fake[8] = autoTtl;
+            BinaryPrimitives.WriteUInt16BigEndian(_fakeScratch.AsSpan(2), (ushort)fLen);
+            _fakeScratch[8] = autoTtl;
         }
         else
         {
-            BinaryPrimitives.WriteUInt16BigEndian(fake.AsSpan(4), (ushort)(fake.Length - 40));
-            fake[7] = autoTtl;
+            BinaryPrimitives.WriteUInt16BigEndian(_fakeScratch.AsSpan(4), (ushort)(fLen - 40));
+            _fakeScratch[7] = autoTtl;
         }
         var a = addr;
-        CalcChecksums(fake, fake.Length, ref a);
-        Send(fake, fake.Length, ref a);
+        CalcChecksums(_fakeScratch, fLen, ref a);
+        Send(_fakeScratch, fLen, ref a);
     }
 
     private async Task HandleDnsWithDohAsync(byte[] pkt, int len, WinDivertAddress addr, int ver, int ipHl)
