@@ -20,6 +20,8 @@ public partial class MainWindow : Window
     private State _state = State.Off;
     private bool _exiting;
     private bool _loadingUi;
+    private UpdateReleaseInfo? _pendingUpdate;
+    private readonly DispatcherTimer _updateTimer;
 
     public event Action? ExitRequested;
 
@@ -28,6 +30,7 @@ public partial class MainWindow : Window
     public MainWindow(bool autostart)
     {
         InitializeComponent();
+        AppUpdater.CleanupOldFiles();
         _settings = AppSettings.Load();
 
         bool mac = !OperatingSystem.IsWindows();
@@ -37,7 +40,9 @@ public partial class MainWindow : Window
         FakeTtlRow.IsVisible = !mac;
         MacNote.IsVisible = mac;
         StartWithOsTitle.Text = OperatingSystem.IsWindows() ? "Windows açılınca başlat" : "Mac açılınca başlat";
-        FooterText.Text = OperatingSystem.IsWindows() ? "BlockDpi v1.0 · WinDivert" : "BlockDpi v1.0 · Yerel proxy modu";
+        FooterText.Text = OperatingSystem.IsWindows()
+            ? $"BlockDpi v{AppUpdater.CurrentVersion} · WinDivert"
+            : $"BlockDpi v{AppUpdater.CurrentVersion} · Yerel proxy modu";
 
         DnsSwitch.IsCheckedChanged += (_, _) => DnsFields.IsEnabled = DnsSwitch.IsChecked == true;
         FakeSwitch.IsCheckedChanged += (_, _) => FakeTtlRow.IsEnabled = FakeSwitch.IsChecked == true;
@@ -59,7 +64,57 @@ public partial class MainWindow : Window
             try { _settings.Save(); } catch { }
         }
 
-        Dispatcher.UIThread.Post(() => _ = StartAsync(), DispatcherPriority.Background);
+        _updateTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(30) };
+        _updateTimer.Tick += async (_, _) => await CheckForUpdatesAsync();
+        _updateTimer.Start();
+
+        Dispatcher.UIThread.Post(async () =>
+        {
+            await StartAsync();
+            await CheckForUpdatesAsync();
+        }, DispatcherPriority.Background);
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        if (_pendingUpdate != null) return;
+        var info = await AppUpdater.CheckForUpdateAsync();
+        if (info == null) return;
+
+        _pendingUpdate = info;
+        if (_settings.AutoUpdate)
+        {
+            await PerformUpdateAsync(info);
+            return;
+        }
+
+        UpdateText.Text = $"Yeni güncelleme geldi ({info.VersionText})";
+        UpdateBanner.IsVisible = true;
+    }
+
+    private async void OnUpdateNowClick(object? sender, RoutedEventArgs e)
+    {
+        if (_pendingUpdate == null) return;
+        await PerformUpdateAsync(_pendingUpdate);
+    }
+
+    private async Task PerformUpdateAsync(UpdateReleaseInfo info)
+    {
+        UpdateBanner.IsVisible = true;
+        UpdateText.Text = $"Güncelleniyor ({info.VersionText})...";
+        UpdateNowButton.IsEnabled = false;
+        UpdateNowButton.Content = "İndiriliyor...";
+        bool ok = await AppUpdater.DownloadAndApplyAsync(info, () =>
+        {
+            _exiting = true;
+            ShutdownEngine();
+        });
+        if (!ok)
+        {
+            UpdateText.Text = $"Yeni güncelleme geldi ({info.VersionText})";
+            UpdateNowButton.IsEnabled = true;
+            UpdateNowButton.Content = "Şimdi Güncelle";
+        }
     }
 
     public new void Show()
@@ -220,6 +275,7 @@ public partial class MainWindow : Window
         _loadingUi = true;
         StartWithOsSwitch.IsChecked = s.StartWithOs;
         TraySwitch.IsChecked = s.MinimizeToTray;
+        AutoUpdateSwitch.IsChecked = s.AutoUpdate;
         DnsSwitch.IsChecked = s.DnsRedirect;
         DnsV4Box.Text = s.DnsV4;
         DnsV4PortBox.Value = s.DnsV4Port;
@@ -257,6 +313,7 @@ public partial class MainWindow : Window
         {
             StartWithOs = StartWithOsSwitch.IsChecked == true,
             MinimizeToTray = TraySwitch.IsChecked == true,
+            AutoUpdate = AutoUpdateSwitch.IsChecked == true,
             DnsRedirect = DnsSwitch.IsChecked == true,
             UseDoh = DnsPreset.SelectedIndex <= 0,
             DnsV4 = (DnsV4Box.Text ?? "").Trim(),
@@ -306,6 +363,9 @@ public partial class MainWindow : Window
             await StopAsync();
             await StartAsync();
         }
+
+        if (_settings.AutoUpdate && _pendingUpdate != null)
+            await PerformUpdateAsync(_pendingUpdate);
     }
 
     private void OnResetClick(object? sender, RoutedEventArgs e)

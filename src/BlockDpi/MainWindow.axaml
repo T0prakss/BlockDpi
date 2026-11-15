@@ -3,7 +3,7 @@
         x:Class="BlockDpi.MainWindow"
         Title="BlockDpi"
         Icon="/Assets/icon.png"
-        Width="400" Height="700"
+        Width="420" Height="720"
         CanResize="False"
         WindowStartupLocation="CenterScreen"
         Background="White"
@@ -131,7 +131,7 @@
     </Border>
 
     <Panel Grid.Row="1">
-      <Grid x:Name="HomeView" RowDefinitions="*,Auto,Auto,Auto">
+      <Grid x:Name="HomeView" RowDefinitions="*,Auto,Auto,Auto,Auto">
         <Grid.Background>
           <LinearGradientBrush StartPoint="50%,0%" EndPoint="50%,100%">
             <GradientStop Color="#FFFFFF" Offset="0"/>
@@ -161,7 +161,20 @@
           <TextBlock x:Name="StatusSub" Text="Açmak için butona dokun" HorizontalAlignment="Center" Margin="0,10,0,0"
                      FontSize="12.5" Foreground="{StaticResource Muted}"/>
         </StackPanel>
-        <Border x:Name="ErrorBanner" Grid.Row="1" IsVisible="False" Margin="20,0,20,12" Padding="14,12"
+
+        <Border x:Name="UpdateBanner" Grid.Row="1" IsVisible="False" Margin="20,0,20,10" Padding="14,10"
+                CornerRadius="14" Background="#F3E8FF" BorderBrush="#D8B4FE" BorderThickness="1">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel VerticalAlignment="Center" Margin="0,0,10,0">
+              <TextBlock x:Name="UpdateText" Text="Yeni güncelleme geldi" FontSize="12.5" FontWeight="SemiBold" Foreground="{StaticResource PurpleDark}"/>
+              <TextBlock Text="GitHub üzerinde yeni sürüm yayınlandı." FontSize="11" Foreground="{StaticResource Muted}"/>
+            </StackPanel>
+            <Button x:Name="UpdateNowButton" Grid.Column="1" Classes="primary" Padding="12,7" FontSize="12"
+                    Content="Şimdi Güncelle" Click="OnUpdateNowClick"/>
+          </Grid>
+        </Border>
+
+        <Border x:Name="ErrorBanner" Grid.Row="2" IsVisible="False" Margin="20,0,20,12" Padding="14,12"
                 CornerRadius="14" Background="#FFF1F2" BorderBrush="#FECDD3" BorderThickness="1">
           <StackPanel Spacing="8">
             <TextBlock x:Name="ErrorText" TextWrapping="Wrap" FontSize="12" Foreground="#9F1239"/>
@@ -170,7 +183,7 @@
           </StackPanel>
         </Border>
 
-        <Grid Grid.Row="2" ColumnDefinitions="*,*,*" Margin="16,0,16,14">
+        <Grid Grid.Row="3" ColumnDefinitions="*,*,*" Margin="16,0,16,14">
           <Border Classes="info" Grid.Column="0">
             <StackPanel><TextBlock Classes="k" Text="DNS"/><TextBlock x:Name="InfoDns" Classes="v" Text="-"/></StackPanel>
           </Border>
@@ -182,12 +195,12 @@
           </Border>
         </Grid>
 
-        <TextBlock Grid.Row="3" x:Name="FooterText" HorizontalAlignment="Center" Margin="0,0,0,14"
-                   FontSize="11" Foreground="#B3A8CC" Text="BlockDpi v1.0"/>
+        <TextBlock Grid.Row="4" x:Name="FooterText" HorizontalAlignment="Center" Margin="0,0,0,14"
+                   FontSize="11" Foreground="#B3A8CC" Text="BlockDpi v1.1"/>
       </Grid>
       <Grid x:Name="SettingsView" IsVisible="False" RowDefinitions="*,Auto">
-        <ScrollViewer Grid.Row="0" Padding="18,4,18,4">
-          <StackPanel>
+        <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Margin="18,4,22,12">
 
             <TextBlock Classes="section" Text="GENEL"/>
             <Border Classes="card">
@@ -205,6 +218,13 @@
                     <TextBlock Classes="desc" Text="Pencereyi kapatınca arka planda çalışmaya devam eder."/>
                   </StackPanel>
                   <ToggleSwitch x:Name="TraySwitch" Grid.Column="1"/>
+                </Grid>
+                <Grid Classes="row" ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock Classes="title" Text="Otomatik güncelleme"/>
+                    <TextBlock Classes="desc" Text="Yeni sürüm çıktığında GitHub'dan otomatik günceller."/>
+                  </StackPanel>
+                  <ToggleSwitch x:Name="AutoUpdateSwitch" Grid.Column="1"/>
                 </Grid>
               </StackPanel>
             </Border>
@@ -261,7 +281,7 @@
                     <TextBlock Classes="title" Text="İlk parça boyutu"/>
                     <TextBlock Classes="desc" Text="Bayt cinsinden (GoodbyeDPI varsayılanı: 2)."/>
                   </StackPanel>
-                  <NumericUpDown x:Name="FragSizeBox" Grid.Column="1" Width="110" Minimum="1" Maximum="1000" Increment="1" FormatString="0"/>
+                  <NumericUpDown x:Name="FragSizeBox" Grid.Column="1" Width="76" Minimum="1" Maximum="1000" Increment="1" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
                 <Grid x:Name="ReverseRow" Classes="row" ColumnDefinitions="*,Auto">
                   <StackPanel>
@@ -303,7 +323,7 @@
                     <TextBlock Classes="title" Text="Sahte paket TTL"/>
                     <TextBlock Classes="desc" Text="Genelde 3-6 arası çalışır."/>
                   </StackPanel>
-                  <NumericUpDown x:Name="FakeTtlBox" Grid.Column="1" Width="110" Minimum="1" Maximum="64" Increment="1" FormatString="0"/>
+                  <NumericUpDown x:Name="FakeTtlBox" Grid.Column="1" Width="76" Minimum="1" Maximum="64" Increment="1" FormatString="0" ShowButtonSpinner="False" HorizontalContentAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
                 <TextBlock x:Name="MacNote" IsVisible="False" Classes="desc" Margin="0,6,0,0"
                            Text="macOS'ta yerel proxy modu kullanılır (127.0.0.1). Trafik bilgisayardan çıkmaz, uzak sunucu yoktur."/>

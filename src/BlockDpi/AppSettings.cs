@@ -7,6 +7,7 @@ public sealed class AppSettings
 {
     public bool StartWithOs { get; set; } = false;
     public bool MinimizeToTray { get; set; } = true;
+    public bool AutoUpdate { get; set; } = false;
 
     public bool DnsRedirect { get; set; } = true;
     public bool UseDoh { get; set; } = true;
