@@ -10,6 +10,8 @@ Trafiği uzak bir sunucuya yönlendirmez (VPN değildir). Paketleri yalnızca ci
 - **TLS / HTTP Paket Bölme:** `ClientHello` paketlerini SNI orta noktasından böler, düşük TTL'li sahte paket gönderir ve QUIC (`UDP 443`) trafiğini TCP'ye yönlendirir.
 - **Windows Desteği:** `WinDivert` sürücüsü ile çekirdek düzeyinde tüm sistem trafiğinde çalışır.
 - **macOS Desteği:** Yerel DoH DNS, `pfctl` şeffaf yönlendirme ve HTTP/HTTPS/SOCKS5 katmanı ile hem tarayıcılarda hem de masaüstü uygulamalarda (Discord, Roblox vb.) çalışır.
+- **Düşük Kaynak Tüketimi:** Arka planda (sistem tepsisinde) yalnızca **~2 - 6 MB RAM** ve **%0 CPU** kullanır; oyunlarda FPS veya sistem performansı kaybı oluşturmaz.
+- **Otomatik Güncelleme:** GitHub üzerinden yeni sürümleri kontrol eder; isteğe bağlı tek tuşla veya otomatik güncellenir.
 - **Ek Ayarlar:** Sadece seçili alan adlarında çalışma (Site Listesi), özel DNS tanımlama, sistem başlangıcında açılma ve sistem tepsisi (tray) desteği.
 
 ## Kurulum
